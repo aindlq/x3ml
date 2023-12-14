@@ -68,6 +68,7 @@ public class XPathInput {
     public static String domainURIForNamedgraps=null;
     public static String entireInputExportedRefUri=null;
     private Map<String, Map<String, List<Node>>> rangeMapCache = new TreeMap<String, Map<String, List<Node>>>();
+    private static Map<String, XPathExpression> regexCache = new HashMap<>();
 
     public XPathInput(Node rootNode, NamespaceContext namespaceContext, String languageFromMapping) {
         this.rootNode = rootNode;
@@ -290,7 +291,15 @@ public class XPathInput {
             return list;
         }
         try {
-            XPathExpression xe = xpath().compile(expression);
+            XPathExpression xe;
+            // because compilation of regex is very expensive we are doing it only once
+            if (regexCache.containsKey(expression)) {
+            	xe = regexCache.get(expression);
+            } else {
+            	xe = xpath().compile(expression);
+            	regexCache.put(expression, xe);
+            }
+            
             NodeList nodeList = (NodeList) xe.evaluate(context, XPathConstants.NODESET);
             int nodesReturned = nodeList.getLength();
             List<Node> list = new ArrayList<>(nodesReturned);
