@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<obj xmlns:bhr="http://www.stegmannsystems.com/2009/bhr"
+   xmlns:edp="http://www.stegmannsystems.com/2009/edp"
+   xmlns:edp2="http://www.stegmannsystems.com/2009/edp2"
+   xmlns:edpf="http://www.stegmannsystems.com/2009/edp-function"
+   xmlns:edpm="http://www.stegmannsystems.com/2009/edp-meta"
+   xmlns:ns1="http://www.w3.org/1999/xhtml"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+   did="6948751" 
+   edp:created="2017-08-25T11:59:37Z" edp:createdBy="Admin" edp:eddVersion="2.7.0" 
+   edp:updated="2022-12-23T13:00:40Z" edp:updatedBy="pietro.liuzzo@biblhertz.it" edp:version="5" lvl="1">
+   <aob30>Herstellung
+      <a3100>Rossi, Giovan Battista</a3100>
+      <a3475>Maler</a3475>
+      <a3000 edp:augmented="kue::07600320">07600320</a3000>
+      <a31nn edp:augmented="kue::07600320">Giovan Battista Rossi</a31nn>
+   </aob30>
+</obj>

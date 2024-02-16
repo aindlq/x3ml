@@ -168,4 +168,14 @@ public class TestGenerators {
         List<String> diff = compareNTriples(expectedResult, mappingResult);
         assertTrue("\nLINES:"+ diff.size() + "\n" + StringUtils.join(diff, "\n") + "\n", errorFree(diff));
     }
+
+    @Test
+    public void testShortenGenerator(){
+        X3MLEngine engine = engine("/generators/12_shorten-mappings.x3ml");
+        X3MLEngine.Output output = engine.execute(document("/generators/12_shorten-input.xml"),policy("/generators/12_shorten-generator-policy.xml"));
+        output.getModel().write(System.out);
+        //String[] expectedResult = xmlToNTriples("/generators/11_MultiHashedUris-expectedOutput.rdf");
+        //List<String> diff = compareNTriples(expectedResult, mappingResult);
+        //assertTrue("\nLINES:"+ diff.size() + "\n" + StringUtils.join(diff, "\n") + "\n", errorFree(diff));
+    }
 }
