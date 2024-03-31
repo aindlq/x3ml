@@ -10,7 +10,7 @@
     <artifactId>x3ml-engine</artifactId>
     <packaging>jar</packaging>
     <name>X3ML-Engine</name>
-    <version>local-build</version>
+    <version>local-build-SNAPSHOT</version>
     
     <inceptionYear>2013</inceptionYear>
     <organization>
