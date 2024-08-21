@@ -58,10 +58,12 @@ public class Root {
     public Root(Element rootNode, final Generator generator, NamespaceContext namespaceContext, List<String> prefixes, Pair<InputStream,Lang> terminologyStream) {
         this.rootNode = rootNode;
         Model model = ModelFactory.createDefaultModel();
+        Model provenanceModel = ModelFactory.createDefaultModel();
         for (String prefix : prefixes) {
             model.setNsPrefix(prefix, namespaceContext.getNamespaceURI(prefix));
+            provenanceModel.setNsPrefix(prefix, namespaceContext.getNamespaceURI(prefix));
         }
-        this.modelOutput = new ModelOutput(model, namespaceContext);
+        this.modelOutput = new ModelOutput(model, provenanceModel, namespaceContext);
         this.xpathInput = new XPathInput(rootNode, namespaceContext, generator.getLanguageFromMapping());
         this.context = new Context() {
 

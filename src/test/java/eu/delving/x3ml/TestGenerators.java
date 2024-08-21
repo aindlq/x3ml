@@ -18,7 +18,10 @@ under the License.
 ==============================================================================*/
 package eu.delving.x3ml;
 
+import gr.forth.Labels;
 import gr.forth.ics.isl.x3ml.X3MLEngine;
+import gr.forth.ics.isl.x3ml.engine.GeneratorContext;
+
 import static eu.delving.x3ml.AllTests.compareNTriples;
 import static eu.delving.x3ml.AllTests.document;
 import static eu.delving.x3ml.AllTests.engine;
@@ -167,5 +170,22 @@ public class TestGenerators {
         String[] expectedResult = xmlToNTriples("/generators/11_MultiHashedUris-expectedOutput.rdf");
         List<String> diff = compareNTriples(expectedResult, mappingResult);
         assertTrue("\nLINES:"+ diff.size() + "\n" + StringUtils.join(diff, "\n") + "\n", errorFree(diff));
+    }
+
+    @Test
+    public void testShortenGenerator(){
+        //X3MLEngine.ENABLE_ASSOCIATION_TABLE = true;
+        X3MLEngine engine = engine("/generators/12_shorten-mappings.x3ml");
+        X3MLEngine.Output output = engine.execute(document("/generators/12_shorten-input.xml"),policy("/generators/12_shorten-generator-policy.xml"));
+        output.write(System.out, Labels.OUTPUT_MIME_TYPE_TURTLE);
+        System.out.println("======================");
+        output.writeProvenance(System.out, Labels.OUTPUT_FORMAT_TURTLE);
+        System.out.println("==================================");
+        //System.out.println(
+        //  GeneratorContext.exportAssociationTableToString()
+        //);
+        //String[] expectedResult = xmlToNTriples("/generators/11_MultiHashedUris-expectedOutput.rdf");
+        //List<String> diff = compareNTriples(expectedResult, mappingResult);
+        //assertTrue("\nLINES:"+ diff.size() + "\n" + StringUtils.join(diff, "\n") + "\n", errorFree(diff));
     }
 }

@@ -929,12 +929,12 @@ public interface X3ML {
     }
 
     @XStreamAlias("comment")
-    @XStreamConverter(value = ToAttributedValueConverter.class, strings = {"content"})
     public static class Comment extends Visible {
 
         @XStreamAsAttribute
         public String type;
 
+        @XStreamAlias("rationale")
         public String content;
     }
 
@@ -1145,6 +1145,7 @@ public interface X3ML {
 
         public static XStream x3mlStream() {
             XStream xstream = new XStream(new PureJavaReflectionProvider(), new XppDriver(new NoNameCoder()));
+            xstream.ignoreUnknownElements();
             xstream.setMode(XStream.NO_REFERENCES);
             xstream.addPermission(NoTypePermission.NONE);
             xstream.allowTypesByWildcard(new String[] {

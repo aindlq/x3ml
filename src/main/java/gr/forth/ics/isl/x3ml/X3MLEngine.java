@@ -262,6 +262,7 @@ public class X3MLEngine {
     public interface Output {
 
         void write(OutputStream outputStream, String rdfFormat);
+        void writeProvenance(OutputStream outputStream, String rdfFormat);
 
         void writeXML(OutputStream outputStream);
 

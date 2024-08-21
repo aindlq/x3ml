@@ -22,25 +22,31 @@ import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.rdf.model.impl.ResourceImpl;
+import com.hp.hpl.jena.shared.uuid.JenaUUID;
 import com.hp.hpl.jena.sparql.core.DatasetGraph;
 import com.hp.hpl.jena.sparql.core.DatasetGraphSimpleMem;
 import com.hp.hpl.jena.sparql.core.Quad;
 import javax.xml.namespace.NamespaceContext;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import static gr.forth.ics.isl.x3ml.X3MLEngine.Output;
 import static gr.forth.ics.isl.x3ml.X3MLEngine.exception;
-import static gr.forth.ics.isl.x3ml.engine.X3ML.TypeElement;
+
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import java.util.Iterator;
+import java.util.List;
+
 import gr.forth.Labels;
-import java.io.File;
-import java.io.FileNotFoundException;
+import gr.forth.UriValidator;
+import gr.forth.ics.isl.x3ml.X3MLEngine.Output;
+import gr.forth.ics.isl.x3ml.engine.X3ML.TypeElement;
+
 import java.io.OutputStream;
 import lombok.extern.log4j.Log4j2;
 
@@ -61,9 +67,31 @@ public class ModelOutput implements Output {
     private final Model model;
     private final NamespaceContext namespaceContext;
 
-    public ModelOutput(Model model, NamespaceContext namespaceContext) {
+    //provenance related
+    private final Model provenanceModel;
+    private final String label_str = "http://www.w3.org/2000/01/rdf-schema#label";
+    private final String p9_str = "http://www.cidoc-crm.org/cidoc-crm/P9_consists_of";
+    private final String p140_str = "http://www.cidoc-crm.org/cidoc-crm/P140_assigned_attribute_to";
+    private final String p141_str = "http://www.cidoc-crm.org/cidoc-crm/P141_assigned";
+    private final String p177_str = "http://www.cidoc-crm.org/cidoc-crm/P177_assigned_property_of_type";
+
+    private final Property label;
+    private final Property p9;
+    private final Property p140;
+    private final Property p141;
+    private final Property p177;
+    //
+
+    public ModelOutput(Model model, Model provenanceModel, NamespaceContext namespaceContext) {
         this.model = model;
         this.namespaceContext = namespaceContext;
+
+        this.provenanceModel = provenanceModel;
+        this.label = this.provenanceModel.createProperty(label_str);
+        this.p9 = this.provenanceModel.createProperty(p9_str);
+        this.p140 = this.provenanceModel.createProperty(p140_str);
+        this.p141 = this.provenanceModel.createProperty(p141_str);
+        this.p177 = this.provenanceModel.createProperty(p177_str);
     }
 
     @Override
@@ -291,5 +319,47 @@ public class ModelOutput implements Output {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         writeNTRIPLE(new PrintStream(baos));
         return new String(baos.toByteArray());
+    }
+
+    // provenance related methods
+
+    // we assume here that 3M executes all mappings sequentially
+    // so first domain, then links, then range for every link
+    // so the provenance logic is implemented in a statefull manner
+    
+    private Resource pathE13;
+    public void startE13Link(Path path, List<Resource> os) {
+        this.pathE13 = this.provenanceModel.createResource(JenaUUID.generate().asURN());
+
+        if (path.path.comments != null && path.path.comments.comments.size() > 0) {
+            String linkLabel = path.path.comments.comments.get(0).content;
+            String fieldUriStr = UriValidator.encodeURI(provenanceModel.getNsPrefixURI("prefix") + "field/" + linkLabel).toASCIIString();
+            Property linkField = this.provenanceModel.createProperty(fieldUriStr);
+            this.pathE13.addProperty(p177, linkField);
+        }
+
+        for (Resource o: os) {
+          this.pathE13.addProperty(p140, o);
+        }
+    }
+
+    public void addE13Path(Path path$, Resource s, Property p, RDFNode o) {
+        String e13Uri = "http://artresearch.net/resource/E13/" + DigestUtils.sha256Hex(s.toString() + p.toString() + o.toString());
+        Resource e13 = this.provenanceModel.createResource(e13Uri);
+
+        e13.addProperty(this.p140, s)
+           .addProperty(this.p177, p)
+           .addProperty(this.p141, o);
+
+        this.pathE13.addProperty(this.p9, e13);
+    }
+
+    public void endE13Link(Property p, RDFNode o) {
+        this.pathE13.addProperty(p141, o);
+    }
+
+    @Override
+    public void writeProvenance(OutputStream outputStream, String rdfFormat) {   
+         this.provenanceModel.write(outputStream, rdfFormat);     
     }
 }

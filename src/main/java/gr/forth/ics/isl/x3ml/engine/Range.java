@@ -66,6 +66,8 @@ public class Range extends GeneratorContext {
                         break;
                     }else{
                         lastResource.addProperty(path.lastProperty, resolvedResource);
+                        context.output().addE13Path(path, lastResource, path.lastProperty, resolvedResource);
+                        context.output().endE13Link(path.lastProperty, resolvedResource);
                         if(linkNamedgraph!=null){
                             X3ML.RootElement.hasNamedGraphs=true;
                             if(linkNamedgraph.isEmpty()){
@@ -104,6 +106,9 @@ public class Range extends GeneratorContext {
                         break;
                 }else{
                     lastResource.addLiteral(path.lastProperty, rangeResolver.literal);
+                    context.output().addE13Path(path, lastResource, path.lastProperty, rangeResolver.literal);
+                    context.output().endE13Link(path.lastProperty, rangeResolver.literal);
+
                     if(linkNamedgraph!=null){
                         String linkNamedGraphMerged=null;
                         if(linkNamedgraph.isEmpty()){

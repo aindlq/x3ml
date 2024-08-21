@@ -19,7 +19,13 @@ under the License.
 package gr.forth.ics.isl.x3ml.engine;
 
 import gr.forth.ics.isl.x3ml.X3MLEngine;
+import gr.forth.ics.isl.x3ml.engine.X3ML.ArgValue;
+import gr.forth.ics.isl.x3ml.engine.X3ML.Condition;
 import gr.forth.ics.isl.x3ml.engine.X3ML.GeneratedType;
+import gr.forth.ics.isl.x3ml.engine.X3ML.GeneratedValue;
+import gr.forth.ics.isl.x3ml.engine.X3ML.GeneratorElement;
+import gr.forth.ics.isl.x3ml.engine.X3ML.SourceType;
+
 import org.w3c.dom.Node;
 import static gr.forth.ics.isl.x3ml.engine.X3ML.ArgValue;
 import static gr.forth.ics.isl.x3ml.engine.X3ML.Condition;
@@ -37,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.w3c.dom.Attr;
@@ -232,7 +239,8 @@ public abstract class GeneratorContext {
                         public ArgValue getArgValue(String name, SourceType sourceType, boolean mergeMultipleValues) {
                             try{
                                 return context.input().evaluateArgument(node, index, generator, name, sourceType, mergeMultipleValues);
-                            }catch(Exception ex){   
+                            }catch(Exception ex){ 
+                                ex.printStackTrace();  
                                 /*We are doing this for the cases where the XPATH expression does not hold (i.e. 
                                 the elemennt is missing or is empty). In this case we should construct a UUID instead 
                                 of simply throwing an error message. Related issue: #72 */
@@ -308,7 +316,8 @@ public abstract class GeneratorContext {
 
     private void createAssociationTable(GeneratedValue generatedValue, GeneratorElement generator, Node node){
         if(X3MLEngine.ENABLE_ASSOCIATION_TABLE) {
-            String xpathProper = extractAssocTableXPath(node);
+            String xpathBase = extractAssocTableXPath(node);
+            String xpathProper = xpathBase;
 
             String value="";
             if(generatedValue.type == GeneratedType.LITERAL || generatedValue.type == GeneratedType.TYPED_LITERAL) {
@@ -319,12 +328,12 @@ public abstract class GeneratorContext {
                         .stream()
                         .filter(arg -> SourceType.xpath.name().equals(arg.type))
                         .findFirst()
-                        .map(arg -> this.rewriteArgXPath(arg.value))
+                        .map(arg -> rewriteArgXPath(xpathBase, arg.value))
                         .orElse(null);
 
                 value="\""+generatedValue.text+"\"";
                 if(generatedArg != null)
-                    xpathProper+="/"+generatedArg;
+                    xpathProper = generatedArg;
                 else
                     xpathProper+="/text()";
             }
@@ -338,14 +347,19 @@ public abstract class GeneratorContext {
         }
     }
 
-    private final Pattern NUMERIC_INDEX_PATTERN = Pattern.compile(".*\\[\\d+\\]$");
-    private final Pattern FUNCTION_PATTERN = Pattern.compile(".*\\(.*\\)$");
+    private static final Pattern NUMERIC_INDEX_PATTERN = Pattern.compile(".*\\[\\d+\\]$");
+    private static final Pattern FUNCTION_PATTERN = Pattern.compile(".*\\(.*\\)$");
+    
+    // Pattern to match 'text()' and relative paths ending with '/text()', including './' or '../'.
+    // e.g string-join((../subfield[@code="a"]/text(),"-"),' ') -> ../subfield[@code="a"]/text()
+    private static final Pattern TEXT_FUNCTION_PATTERN = Pattern.compile("((\\.\\./|\\./)?[^\\(]*text\\(\\))");
+
 
     /**
      * In case of multiple intermediary elements we re-write xpath to always point to the first one
      * because this is a default behaviour of non merging generators
      */
-    public String rewriteArgXPath(String xpath) {
+    public static String rewriteArgXPath(String xpathBase, String xpath) {
         // because we need to add [1] to every tag without index, 
         // but at the same time don't messup with function calls we are spliting xpath on "/"
         // but doing this only if "/" is not inside function call or attribtue acces
@@ -393,8 +407,32 @@ public abstract class GeneratorContext {
             }
         }
 
-        // re-construct xpath
-        return String.join("/", segments);
+        // if the whole xpath is a function call, we need to rewrite nested relative pathes and text() calls
+        // to make them absolute using base path
+        if (segments.size() == 1 && FUNCTION_PATTERN.matcher(segments.get(0)).matches()) {
+            return resolveFunctionXPath(xpathBase, segments.get(0));
+        } else {
+            return xpathBase + "/" + String.join("/", segments);   
+        }
+    }
+
+    /**
+     * Modifies an XPath function call by replacing occurrences of `text()` and various relative paths
+     * with versions that include the provided base path.
+     */
+    private static String resolveFunctionXPath(String basePath, String xpathFunction) {
+        Matcher matcher = TEXT_FUNCTION_PATTERN.matcher(xpathFunction);
+        String modifiedXPath = matcher.replaceAll(matchResult -> {
+            String match = matchResult.group();
+            if (match.startsWith(".") || match.equals("text()")) {
+                return basePath + "/" + match;
+            } else {
+                // we have absolute path expression, so we should not prepend basePath
+                return match;
+            }
+        });
+
+        return modifiedXPath;
     }
     
     /**Adds a new entry in the association table with the given XPATH expression and 

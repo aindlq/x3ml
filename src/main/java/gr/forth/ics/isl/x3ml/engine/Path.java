@@ -23,6 +23,9 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.impl.ResourceImpl;
 
 import gr.forth.IterableNodeList;
+import gr.forth.ics.isl.x3ml.engine.X3ML.PathElement;
+import gr.forth.ics.isl.x3ml.engine.X3ML.RangeElement;
+import gr.forth.ics.isl.x3ml.engine.X3ML.Relationship;
 
 import org.w3c.dom.Node;
 import java.util.ArrayList;
@@ -85,6 +88,7 @@ public class Path extends GeneratorContext {
             throw exception("Domain node has no resource");
         }
         lastResources = domain.entityResolver.resources;
+        context.output().startE13Link(this, lastResources);
         lastProperty = property;
         if(property==null){
             return ;
@@ -102,6 +106,7 @@ public class Path extends GeneratorContext {
                                                       lastProperty.asNode(),
                                                       resolvedResource.asNode());
                         }
+                    context.output().addE13Path(this, lastResource, lastProperty, resolvedResource);
                     lastResource.addProperty(lastProperty, resolvedResource);
                 }
             }
@@ -117,6 +122,8 @@ public class Path extends GeneratorContext {
         String expression = path.source_relation.relation.get(0).expression;
         if (range.source_node.expression.equals(expression)) {
             expression = "";
+        } else {
+            expression = range.source_node.expression;
         }
         if(range.source_node.skip!=null && range.source_node.skip.equalsIgnoreCase("true")){    //namedgraphURI was given
             expression="";
